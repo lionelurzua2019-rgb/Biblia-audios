@@ -715,20 +715,31 @@
       listALL.innerHTML = htmlALL;
     }
 
+    /* Referencia al item activo actual */
+    var _activeBookEl = null;
+
     function renderBooks(testament) {
       _prerenderBooks();
-      /* Mostrar solo la sublista correcta */
-      var ids = ['AT', 'NT', 'ALL'];
-      for (var i = 0; i < ids.length; i++) {
-        var el = document.getElementById('brv-list-' + ids[i]);
-        if (el) el.style.display = (ids[i] === testament) ? '' : 'none';
+      /* Mostrar solo la sublista correcta - solo 3 operaciones */
+      var listAT  = document.getElementById('brv-list-AT');
+      var listNT  = document.getElementById('brv-list-NT');
+      var listALL = document.getElementById('brv-list-ALL');
+      if (listAT)  listAT.style.display  = testament === 'AT'  ? '' : 'none';
+      if (listNT)  listNT.style.display  = testament === 'NT'  ? '' : 'none';
+      if (listALL) listALL.style.display = testament === 'ALL' ? '' : 'none';
+      /* Marcar libro activo - sin querySelectorAll */
+      if (_activeBookEl) {
+        _activeBookEl.classList.remove('active');
+        _activeBookEl.setAttribute('aria-selected', 'false');
+        _activeBookEl = null;
       }
-      /* Marcar libro activo */
-      var allItems = document.querySelectorAll('#brv-books-list .brv-book-item');
-      for (var j = 0; j < allItems.length; j++) {
-        var active = allItems[j].getAttribute('onclick').indexOf("'" + state.bookId + "'") !== -1;
-        allItems[j].classList.toggle('active', active);
-        allItems[j].setAttribute('aria-selected', active);
+      if (state.bookId) {
+        var el = document.querySelector('[onclick*="selectBook('' + state.bookId + ''")"]:not([data-nav])');
+        if (el) {
+          el.classList.add('active');
+          el.setAttribute('aria-selected', 'true');
+          _activeBookEl = el;
+        }
       }
     }
 
@@ -813,10 +824,18 @@
     }
 
     /* ── API pública ── */
+    var _activeTabEl = null;
     function filterTestament(t, btn) {
-      document.querySelectorAll('.brv-test-tab').forEach(b => {
-        b.classList.toggle('active', b === btn);
-        b.setAttribute('aria-selected', b === btn);
+      /* Solo cambia el tab anterior y el nuevo - sin recorrer todos */
+      if (_activeTabEl && _activeTabEl !== btn) {
+        _activeTabEl.classList.remove('active');
+        _activeTabEl.setAttribute('aria-selected', 'false');
+      }
+      if (btn) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        _activeTabEl = btn;
+      }
       });
       state.testament = t;
       renderBooks(t);
